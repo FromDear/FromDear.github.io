@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
-export default function MessagePage({ params }: { params: { username: string } }) {
+export default function MessagePage({ params }: { params: { link_id: string } }) {
     const router = useRouter();
     const [content, setContent] = useState('');
     const [senderName, setSenderName] = useState('');
@@ -14,11 +14,10 @@ export default function MessagePage({ params }: { params: { username: string } }
 
     useEffect(() => {
         const fetchUser = async () => {
-            // params.username is actually link_id
             const { data: profile } = await supabase
                 .from('users')
                 .select('*')
-                .eq('link_id', params.username) // Use link_id for lookup
+                .eq('link_id', params.link_id) // Use link_id for lookup
                 .single();
 
             if (profile) {
@@ -26,7 +25,7 @@ export default function MessagePage({ params }: { params: { username: string } }
             }
         };
         fetchUser();
-    }, [params.username]);
+    }, [params.link_id]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -34,22 +33,38 @@ export default function MessagePage({ params }: { params: { username: string } }
         setLoading(true);
 
         try {
+            // 1. Analyze Emotion via AI
+            let emotionAnalysis = null;
+            try {
+                const aiResponse = await fetch('/api/analyze-emotion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content }),
+                });
+                if (aiResponse.ok) {
+                    emotionAnalysis = await aiResponse.json();
+                }
+            } catch (err) {
+                console.warn('AI Analysis failed, proceeding without it', err);
+            }
+
+            // 2. Save Message with Analysis
             const { error } = await supabase.from('messages').insert({
                 user_id: user.id,
                 content,
                 sender_name: senderName || '익명',
-                opened_date: null, // No lock
-                is_opened: false // Initially unread
+                is_opened: false,
+                emotion_analysis: emotionAnalysis // Save AI result
             });
 
             if (error) throw error;
 
             alert(`마음의 선물이 성공적으로 전달되었어요! 🎁`);
-            router.push(`/${params.username}`);
+            router.push(`/${params.link_id}`);
 
         } catch (error: any) {
-            console.error(error);
-            alert('선물 전송에 실패했어요.');
+            console.error('Message Send Error:', error);
+            alert(`선물 전송에 실패했어요 😢\n오류 내용: ${error.message || JSON.stringify(error)}`);
         } finally {
             setLoading(false);
         }
@@ -107,12 +122,12 @@ export default function MessagePage({ params }: { params: { username: string } }
                         disabled={loading}
                         className="w-full py-3 bg-gradient-to-r from-red-500 to-green-500 text-white font-bold rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all disabled:opacity-50"
                     >
-                        {loading ? '포장 중...' : '선물 보내기 🎁'}
+                        {loading ? 'AI가 선물 포장 중... 🎁' : '선물 보내기 🎁'}
                     </button>
                 </form>
 
                 <div className="mt-6 text-center">
-                    <Link href={`/${params.username}`} className="text-sm text-gray-500 hover:text-gray-700">
+                    <Link href={`/${params.link_id}`} className="text-sm text-gray-500 hover:text-gray-700">
                         취소하고 돌아가기
                     </Link>
                 </div>

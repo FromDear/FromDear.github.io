@@ -196,6 +196,35 @@ export default function DashboardPage() {
                             </p>
                         </div>
 
+                        {/* Emotion Analysis Result */}
+                        {selectedMessage.emotion_analysis && (
+                            <div className="mx-auto mb-6 bg-white border-2 border-dashed border-gray-300 p-4 rounded-lg w-full max-w-xs relative rotate-1 shadow-sm">
+                                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-white px-2 text-xs font-bold text-gray-400 tracking-widest">
+                                    INGREDIENTS
+                                </div>
+                                <h4 className="text-center font-bold text-gray-700 mb-3 border-b pb-2 text-sm">
+                                    선물 성분표 🧾
+                                </h4>
+                                <div className="space-y-2">
+                                    {Object.entries(selectedMessage.emotion_analysis).map(([emotion, percent]: [string, any]) => (
+                                        <div key={emotion} className="flex items-center justify-between text-sm">
+                                            <span className="font-medium text-gray-600">{emotion}</span>
+                                            <div className="flex-1 mx-3 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-red-400 rounded-full"
+                                                    style={{ width: `${percent}%` }}
+                                                />
+                                            </div>
+                                            <span className="font-mono font-bold text-gray-800">{percent}%</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="mt-3 pt-2 border-t border-dashed border-gray-300 text-center text-xs text-gray-400 font-mono">
+                                    100% SINCERITY INCLUDED
+                                </div>
+                            </div>
+                        )}
+
                         <div className="bg-[#FFFDF5] p-8 rounded-2xl text-gray-700 leading-relaxed whitespace-pre-wrap max-h-[50vh] overflow-y-auto mb-8 text-lg border border-red-50 shadow-inner">
                             {selectedMessage.content}
                         </div>
